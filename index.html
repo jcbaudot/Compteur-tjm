@@ -48,6 +48,7 @@
 
             <div class="bloc-compteur">
                 <p class="cout"><span id="coutActuel">0.00</span> €</p>
+                <p class="reference">Référence SMIC : <span id="coutReference">0.00</span> €</p>
                 <p class="timing"><span id="tempsEcoule">0h 0m 0s</span></p>
             </div>
 
@@ -100,6 +101,13 @@
                 return this.secondesEcoulees * this.tauxParSeconde;
             },
 
+            calculerCoutReference() {
+                const tarifReference = 105;
+                const heuresJournalier = 8;
+                const tauxReferenceParSeconde = tarifReference / (heuresJournalier * 3600);
+                return this.secondesEcoulees * tauxReferenceParSeconde;
+            },
+
             obtenirTemps() {
                 return {
                     heures: Math.floor(this.secondesEcoulees / 3600),
@@ -139,6 +147,7 @@
             tarifConfigInput: document.getElementById('tarifJournalierConfig'),
             tarifPanelInput: document.getElementById('tarifJournalierPanel'),
             coutActuelSpan: document.getElementById('coutActuel'),
+            coutReferenceSpan: document.getElementById('coutReference'),
             tempsEcouleSpan: document.getElementById('tempsEcoule'),
 
             afficherConfig() {
@@ -156,6 +165,9 @@
             mettreAJourCompteur() {
                 const cout = compteur.calculerCout();
                 this.coutActuelSpan.textContent = cout.toFixed(2);
+
+                const coutReference = compteur.calculerCoutReference();
+                this.coutReferenceSpan.textContent = coutReference.toFixed(2);
 
                 const temps = compteur.obtenirTemps();
                 this.tempsEcouleSpan.textContent = `${temps.heures}h ${temps.minutes}m ${temps.secondes}s`;

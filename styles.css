@@ -36,6 +36,13 @@ body {
   margin: 0;
 }
 
+.reference {
+  font-size: 3vw;
+  letter-spacing: -0.03em;
+  margin: 10px 0 0 0;
+  opacity: 0.6;
+}
+
 /* Burger Menu */
 .burger-menu {
   position: fixed;

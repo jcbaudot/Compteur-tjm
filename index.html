@@ -15,7 +15,7 @@
             <h1>Configuration</h1>
             <div>
                 <label for="tarifJournalierConfig">Tarif journalier (€) :</label>
-                <input type="number" id="tarifJournalierConfig" value="400" step="10">
+                <input type="number" id="tarifJournalierConfig" value="650" step="10">
             </div>
             <button id="btnValider">Valider</button>
         </div>
@@ -38,7 +38,7 @@
                 <div class="panel-content">
                     <div class="tarif-input-group">
                         <label for="tarifJournalierPanel">Taux journalier (€)</label>
-                        <input type="number" id="tarifJournalierPanel" value="400" step="10">
+                        <input type="number" id="tarifJournalierPanel" value="650" step="10">
                     </div>
                     <button id="btnDemarrer">Démarrer</button>
                     <button id="btnPause">Pause</button>
@@ -76,7 +76,7 @@
                     console.warn('localStorage non disponible:', e);
                 }
                 // Utiliser la valeur par défaut si pas de valeur stockée
-                this.tarifJournalier = 400;
+                this.tarifJournalier = 650;
                 this.calculerTauxParSeconde();
                 return false;
             },
@@ -150,7 +150,7 @@
                 this.ecranConfig.style.display = 'none';
                 this.ecranCompteur.style.display = 'block';
                 this.mettreAJourCompteur();
-                this.tarifPanelInput.value = compteur.tarifJournalier || 400;
+                this.tarifPanelInput.value = compteur.tarifJournalier || 650;
             },
 
             mettreAJourCompteur() {
@@ -174,12 +174,12 @@
                 vue.afficherConfig();
             }
             // Toujours afficher le tarif dans le panel (valeur par défaut ou chargée)
-            vue.tarifPanelInput.value = compteur.tarifJournalier || 400;
+            vue.tarifPanelInput.value = compteur.tarifJournalier || 650;
         }
 
         // Validation du tarif initial
         document.getElementById('btnValider').addEventListener('click', () => {
-            const tarif = parseFloat(vue.tarifConfigInput.value) || 400;
+            const tarif = parseFloat(vue.tarifConfigInput.value) || 650;
             compteur.definirTarif(tarif); // Stocke dans localStorage
             vue.afficherCompteur();
         });

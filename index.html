@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Compteur de coût en temps réel</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <div class="container">
+        <!-- Écran de configuration initiale -->
+        <div id="ecranConfig" style="display: none;">
+            <h1>Configuration</h1>
+            <div>
+                <label for="tarifJournalierConfig">Tarif journalier (€) :</label>
+                <input type="number" id="tarifJournalierConfig" value="400" step="10">
+            </div>
+            <button id="btnValider">Valider</button>
+        </div>
+
+        <!-- Écran du compteur -->
+        <div id="ecranCompteur" style="display: none;">
+
+            <!-- Burger Menu Button -->
+            <button id="burgerMenu" class="burger-menu" aria-label="Menu">
+                <span class="burger-line"></span>
+                <span class="burger-line"></span>
+                <span class="burger-line"></span>
+            </button>
+
+            <!-- Overlay -->
+            <div id="overlay" class="overlay"></div>
+
+            <!-- Side Panel -->
+            <div id="sidePanel" class="side-panel">
+                <div class="panel-content">
+                    <div class="tarif-input-group">
+                        <label for="tarifJournalierPanel">Taux journalier (€)</label>
+                        <input type="number" id="tarifJournalierPanel" value="400" step="10">
+                    </div>
+                    <button id="btnDemarrer">Démarrer</button>
+                    <button id="btnPause">Pause</button>
+                    <button id="btnReset">Réinitialiser</button>
+                </div>
+            </div>
+
+            <div class="bloc-compteur">
+                <p class="cout"><span id="coutActuel">0.00</span> €</p>
+                <p class="timing"><span id="tempsEcoule">0h 0m 0s</span></p>
+            </div>
+
+        </div>
+
+    </div>
+
+    <script>
+        // Modèle de données - indépendant de l'affichage
+        const compteur = {
+            tarifJournalier: 0,
+            tauxParSeconde: 0,
+            secondesEcoulees: 0,
+            enCours: false,
+            intervalle: null,
+
+            chargerTarif() {
+                try {
+                    const tarifStocke = localStorage.getItem('tarifJournalier');
+                    if (tarifStocke) {
+                        this.tarifJournalier = parseFloat(tarifStocke);
+                        this.calculerTauxParSeconde();
+                        return true;
+                    }
+                } catch (e) {
+                    console.warn('localStorage non disponible:', e);
+                }
+                // Utiliser la valeur par défaut si pas de valeur stockée
+                this.tarifJournalier = 400;
+                this.calculerTauxParSeconde();
+                return false;
+            },
+
+            definirTarif(tarif) {
+                this.tarifJournalier = tarif;
+                try {
+                    localStorage.setItem('tarifJournalier', tarif);
+                } catch (e) {
+                    console.warn('Impossible de sauvegarder dans localStorage:', e);
+                }
+                this.calculerTauxParSeconde();
+            },
+
+            calculerTauxParSeconde() {
+                const heuresJournalier = 8;
+                this.tauxParSeconde = this.tarifJournalier / (heuresJournalier * 3600);
+            },
+
+            calculerCout() {
+                return this.secondesEcoulees * this.tauxParSeconde;
+            },
+
+            obtenirTemps() {
+                return {
+                    heures: Math.floor(this.secondesEcoulees / 3600),
+                    minutes: Math.floor((this.secondesEcoulees % 3600) / 60),
+                    secondes: this.secondesEcoulees % 60
+                };
+            },
+
+            demarrer(callback) {
+                if (!this.enCours) {
+                    this.enCours = true;
+                    this.intervalle = setInterval(() => {
+                        this.secondesEcoulees++;
+                        if (callback) callback();
+                    }, 1000);
+                }
+            },
+
+            pause() {
+                if (this.enCours) {
+                    this.enCours = false;
+                    clearInterval(this.intervalle);
+                    this.intervalle = null;
+                }
+            },
+
+            reinitialiser() {
+                this.pause();
+                this.secondesEcoulees = 0;
+            }
+        };
+
+        // Gestion de l'affichage - séparée du modèle
+        const vue = {
+            ecranConfig: document.getElementById('ecranConfig'),
+            ecranCompteur: document.getElementById('ecranCompteur'),
+            tarifConfigInput: document.getElementById('tarifJournalierConfig'),
+            tarifPanelInput: document.getElementById('tarifJournalierPanel'),
+            coutActuelSpan: document.getElementById('coutActuel'),
+            tempsEcouleSpan: document.getElementById('tempsEcoule'),
+
+            afficherConfig() {
+                this.ecranConfig.style.display = 'block';
+                this.ecranCompteur.style.display = 'none';
+            },
+
+            afficherCompteur() {
+                this.ecranConfig.style.display = 'none';
+                this.ecranCompteur.style.display = 'block';
+                this.mettreAJourCompteur();
+                this.tarifPanelInput.value = compteur.tarifJournalier || 400;
+            },
+
+            mettreAJourCompteur() {
+                const cout = compteur.calculerCout();
+                this.coutActuelSpan.textContent = cout.toFixed(2);
+
+                const temps = compteur.obtenirTemps();
+                this.tempsEcouleSpan.textContent = `${temps.heures}h ${temps.minutes}m ${temps.secondes}s`;
+            }
+        };
+
+        // Initialisation - Étape 1 & 2
+        function initialiser() {
+            const tarifExiste = compteur.chargerTarif();
+
+            if (tarifExiste) {
+                // Étape 2 : Affiche directement le compteur lors des visites suivantes
+                vue.afficherCompteur();
+            } else {
+                // Étape 1 : Demande le tarif journalier à la première visite
+                vue.afficherConfig();
+            }
+            // Toujours afficher le tarif dans le panel (valeur par défaut ou chargée)
+            vue.tarifPanelInput.value = compteur.tarifJournalier || 400;
+        }
+
+        // Validation du tarif initial
+        document.getElementById('btnValider').addEventListener('click', () => {
+            const tarif = parseFloat(vue.tarifConfigInput.value) || 400;
+            compteur.definirTarif(tarif); // Stocke dans localStorage
+            vue.afficherCompteur();
+        });
+
+        // Contrôles du compteur
+        document.getElementById('btnDemarrer').addEventListener('click', () => {
+            compteur.demarrer(() => {
+                vue.mettreAJourCompteur();
+            });
+            closePanelFunc();
+        });
+
+        document.getElementById('btnPause').addEventListener('click', () => {
+            compteur.pause();
+        });
+
+        document.getElementById('btnReset').addEventListener('click', () => {
+            compteur.reinitialiser();
+            vue.mettreAJourCompteur();
+        });
+
+        // Modification du tarif depuis le panel
+        document.getElementById('tarifJournalierPanel').addEventListener('change', (e) => {
+            const nouveauTarif = parseFloat(e.target.value) || compteur.tarifJournalier;
+            compteur.definirTarif(nouveauTarif);
+            vue.mettreAJourCompteur();
+        });
+
+        // Gestion du menu burger
+        const burgerMenu = document.getElementById('burgerMenu');
+        const sidePanel = document.getElementById('sidePanel');
+        const overlay = document.getElementById('overlay');
+
+        function togglePanel() {
+            sidePanel.classList.toggle('open');
+            overlay.classList.toggle('open');
+            burgerMenu.classList.toggle('open');
+        }
+
+        function closePanelFunc() {
+            sidePanel.classList.remove('open');
+            overlay.classList.remove('open');
+            burgerMenu.classList.remove('open');
+        }
+
+        burgerMenu.addEventListener('click', togglePanel);
+        overlay.addEventListener('click', closePanelFunc);
+
+        // Lancement de l'application
+        initialiser();
+    </script>
+</body>
+
+</html>
